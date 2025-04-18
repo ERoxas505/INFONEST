@@ -8,7 +8,7 @@ pytextrank==3.2.5
 transformers==4.35.0
 torch==2.0.1
 numpy==1.26.0
-requests==2.31.0
+requests==2.32.2
 yt_dlp==2024.8.6
 openai-whisper==20231117
 pydub==0.25.1
