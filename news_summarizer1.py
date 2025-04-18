@@ -18,8 +18,6 @@ import time
 from spacy.cli import download
 from pathlib import Path
 
-
-
 nlp = spacy.load("en_core_web_sm")
 nlp.add_pipe("textrank", last=True)
 
@@ -45,56 +43,83 @@ def get_actual_article_link(google_news_url):
         return None
 
 # Load essential resources with caching
+#@st.cache_resource
+#def punkt_load():
+    #return nltk.download('punkt')
+#punkt = punkt_load()
+
+#@st.cache_resource
+#def stopwords_load():
+    #nltk.download('stopwords')
+    #stop_words = nltk.corpus.stopwords.words("english")
+    #stop_words = stop_words + ['hi', 'im', 'hey']
+    #return stop_words
+#stop_words = stopwords_load()
+
 @st.cache_resource
 def punkt_load():
-    return nltk.download('punkt')
+    logger.info("Downloading NLTK punkt data")
+    result = nltk.download('punkt')
+    logger.info("NLTK punkt data downloaded")
+    return result
 punkt = punkt_load()
-
 
 @st.cache_resource
 def stopwords_load():
+    logger.info("Downloading NLTK stopwords data")
     nltk.download('stopwords')
     stop_words = nltk.corpus.stopwords.words("english")
     stop_words = stop_words + ['hi', 'im', 'hey']
+    logger.info("NLTK stopwords data downloaded")
     return stop_words
 
 stop_words = stopwords_load()
 
+from models import load_bart_model, load_bart_tokenizer
 
-@st.cache_resource
-def bart_tokenizer_load():
-    bart_tokenizer = BartTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
+# Add logging to capture initialization details
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Load the models with logging
+logger.info("Starting to load BART model and tokenizer")
+bart_model = load_bart_model()
+bart_tokenizer = load_bart_tokenizer()
+logger.info("BART model and tokenizer loaded successfully")
+#@st.cache_resource
+#def bart_tokenizer_load():
+    #bart_tokenizer = BartTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
     #bart_tokenizer = AutoTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
     #bart_tokenizer =AutoTokenizer.from_pretrained("Angel0J/distilbart-multi_news-12-6")
-    return bart_tokenizer
+    #return bart_tokenizer
 
 
 #Load the bart model to GPU
-@st.cache_resource
-def bart_model_load():
-    bart_model = BartForConditionalGeneration.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors= False)
+#@st.cache_resource
+#def bart_model_load():
+    #bart_model = BartForConditionalGeneration.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors= False)
     #bart_model = AutoModelForSeq2SeqLM.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors= False)
     #bart_model = BartForConditionalGeneration.from_pretrained("Angel0J/distilbart-multi_news-12-6", use_safetensors= True)
-    return bart_model
-
+    #return bart_model
 
 # Load the models
-loading_message = st.empty()  # Container for the "Now Loading..." message
-progress = st.progress(0)  # Initialize progress bar
-loading_message.markdown("**Now Loading...**", unsafe_allow_html=True)
-with st.empty():  # To prevent the spinner from blocking progress updates
+#loading_message = st.empty()  # Container for the "Now Loading..." message
+#progress = st.progress(0)  # Initialize progress bar
+#loading_message.markdown("**Now Loading...**", unsafe_allow_html=True)
+#with st.empty():  # To prevent the spinner from blocking progress updates
     # Load the BART model
-    progress.progress(50)  # Set progress to 66% after loading BART model
-    bart_model = bart_model_load()
+    #progress.progress(50)  # Set progress to 66% after loading BART model
+    #bart_model = bart_model_load()
 
     # Load the BART tokenizer
-    progress.progress(100)  # Set progress to 100% after loading BART tokenizer
-    bart_tokenizer = bart_tokenizer_load()
+    #progress.progress(100)  # Set progress to 100% after loading BART tokenizer
+    #bart_tokenizer = bart_tokenizer_load()
     
 # Once the models are loaded, remove the progress bar
-progress.empty()  # Remove the progress bar from the screen
-loading_message.empty()  # Remove the "Now Loading..." message
-time.sleep(1)
+#progress.empty()  # Remove the progress bar from the screen
+#loading_message.empty()  # Remove the "Now Loading..." message
+#time.sleep(1)
 
 # Fetch news function
 @st.cache_resource

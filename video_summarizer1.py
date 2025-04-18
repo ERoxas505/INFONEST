@@ -20,35 +20,48 @@ from PIL import Image
 # Cache Whisper model loading
 @st.cache_resource
 def load_whisper_model():
-    return whisper.load_model("tiny").to("cpu")
+    return whisper.load_model("base").to("cpu")
 
 # Cache BART model and tokenizer loading
-@st.cache_resource
-def load_bart_modelYT():
-    return BartForConditionalGeneration.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors= False)
+#@st.cache_resource
+#def load_bart_modelYT():
+    #return BartForConditionalGeneration.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors= False)
     #return AutoModelForSeq2SeqLM.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors= False)
     #return AutoModelForSeq2SeqLM.from_pretrained("Angel0J/distilbart-multi_news-12-6", use_safetensors = True)
     
-@st.cache_resource
-def load_bart_tokenizerYT():
-    return BartTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
+#@st.cache_resource
+#def load_bart_tokenizerYT():
+    #return BartTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
     #return AutoTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
     #return AutoTokenizer.from_pretrained("Angel0J/distilbart-multi_news-12-6")
 
 # Load the models
-loading_message = st.empty()
-progress = st.progress(0)  # Initialize progress bar
-loading_message.markdown("**Now Loading...**", unsafe_allow_html=True)
-with st.empty():
-    progress.progress(50)  # Update to 50% for BART model
-    bart_model = load_bart_modelYT()
-    progress.progress(100)  # Update to 100% for tokenizer
-    bart_tokenizer = load_bart_tokenizerYT()
+#loading_message = st.empty()
+#progress = st.progress(0)  # Initialize progress bar
+#loading_message.markdown("**Now Loading...**", unsafe_allow_html=True)
+#with st.empty():
+    #progress.progress(50)  # Update to 50% for BART model
+    #bart_model = load_bart_modelYT()
+    #progress.progress(100)  # Update to 100% for tokenizer
+    #bart_tokenizer = load_bart_tokenizerYT()
 
 # Once the models are loaded, remove the progress bar
-progress.empty()  # Remove the progress bar from the screen
-loading_message.empty()  # Remove the "Now Loading..." message
-time.sleep(1)
+#progress.empty()  # Remove the progress bar from the screen
+#loading_message.empty()  # Remove the "Now Loading..." message
+#time.sleep(1)
+
+from models import load_bart_model, load_bart_tokenizer
+
+# Add logging to capture initialization details
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Load the models with logging
+logger.info("Starting to load BART model and tokenizer in video_summarizer1")
+bart_model = load_bart_model()
+bart_tokenizer = load_bart_tokenizer()
+logger.info("BART model and tokenizer loaded successfully in video_summarizer1")
 
 @st.cache_data(ttl=None, max_entries=80)
 def download_audio(url, output_path="downloads/audio"):
@@ -122,8 +135,7 @@ def extract_subtitles(url):
     
 # Function to clean and preprocess subtitle text
 def clean_subtitles(subtitle_url):
-    #st.write("Cleaning subtitle text...")
-    
+    #st.write("Cleaning subtitle text...") 
     try:
         response = requests.get(subtitle_url)
         if response.status_code == 200:
