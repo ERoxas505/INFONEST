@@ -7,7 +7,8 @@ import io
 import nltk
 import spacy
 import re
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+#from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import BartForConditionalGeneration, BartTokenizer
 from transformers import pipeline
 from nltk.tokenize import sent_tokenize
 import pytextrank
@@ -62,7 +63,8 @@ stop_words = stopwords_load()
 
 @st.cache_resource
 def bart_tokenizer_load():
-    bart_tokenizer = AutoTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
+    bart_tokenizer = BartTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
+    #bart_tokenizer = AutoTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
     #bart_tokenizer =AutoTokenizer.from_pretrained("Angel0J/distilbart-multi_news-12-6")
     return bart_tokenizer
 
@@ -70,7 +72,8 @@ def bart_tokenizer_load():
 #Load the bart model to GPU
 @st.cache_resource
 def bart_model_load():
-    bart_model = AutoModelForSeq2SeqLM.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors= False)
+    bart_model = BartForConditionalGeneration.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors= False)
+    #bart_model = AutoModelForSeq2SeqLM.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors= False)
     #bart_model = BartForConditionalGeneration.from_pretrained("Angel0J/distilbart-multi_news-12-6", use_safetensors= True)
     return bart_model
 

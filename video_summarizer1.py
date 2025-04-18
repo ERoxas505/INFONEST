@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 import re
 import numpy as np
 from scipy.signal import resample
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+#from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
 import time
 from PIL import Image
@@ -25,12 +25,14 @@ def load_whisper_model():
 # Cache BART model and tokenizer loading
 @st.cache_resource
 def load_bart_modelYT():
-    return AutoModelForSeq2SeqLM.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors= False)
+    return BartForConditionalGeneration.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors= False)
+    #return AutoModelForSeq2SeqLM.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors= False)
     #return AutoModelForSeq2SeqLM.from_pretrained("Angel0J/distilbart-multi_news-12-6", use_safetensors = True)
     
 @st.cache_resource
 def load_bart_tokenizerYT():
-    return AutoTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
+    return BartTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
+    #return AutoTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
     #return AutoTokenizer.from_pretrained("Angel0J/distilbart-multi_news-12-6")
 
 # Load the models
