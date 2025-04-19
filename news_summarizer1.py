@@ -8,7 +8,7 @@ import nltk
 import spacy
 import re
 #from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-from transformers import BartForConditionalGeneration, BartTokenizer
+#from transformers import BartForConditionalGeneration, BartTokenizer
 from transformers import pipeline
 from nltk.tokenize import sent_tokenize
 import pytextrank
@@ -17,6 +17,11 @@ from googlenewsdecoder import new_decoderv1
 import time
 from spacy.cli import download
 from pathlib import Path
+
+# Add logging setup at the top
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 nlp = spacy.load("en_core_web_sm")
 nlp.add_pipe("textrank", last=True)
@@ -76,11 +81,6 @@ def stopwords_load():
 stop_words = stopwords_load()
 
 from models import load_bart_model, load_bart_tokenizer
-
-# Add logging to capture initialization details
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Load the models with logging
 logger.info("Starting to load BART model and tokenizer")

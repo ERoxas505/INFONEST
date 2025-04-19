@@ -5,7 +5,7 @@ import whisper
 from pydub import AudioSegment
 import os
 import torch
-from transformers import BartForConditionalGeneration, BartTokenizer
+#from transformers import BartForConditionalGeneration, BartTokenizer
 import requests
 import json
 import xml.etree.ElementTree as ET
@@ -51,6 +51,9 @@ def load_whisper_model():
 #time.sleep(1)
 
 from models import load_bart_model, load_bart_tokenizer
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Add logging to capture initialization details
 import logging
