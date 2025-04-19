@@ -82,6 +82,7 @@ def download_audio(url, output_path="downloads/audio"):
         }],
         'outtmpl': f"{output_path}.%(ext)s",
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'cookiefile': 'cookies.txt',
     }
     
     try:
