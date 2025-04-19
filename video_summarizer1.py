@@ -68,13 +68,11 @@ logger.info("BART model and tokenizer loaded successfully in video_summarizer1")
 
 @st.cache_data(ttl=None, max_entries=80)
 def download_audio(url, output_path="downloads/audio"):
-    #st.write("Downloading audio from YouTube...")
-    # Use the video URL (or any part of it) to generate a unique cache key
-    video_id = url.split('v=')[-1]  # Assuming the URL format has a 'v=' parameter for video ID
-    output_path = f"{output_path}_{video_id}"  # Make the cache path unique
+    video_id = url.split('v=')[-1]
+    output_path = f"{output_path}_{video_id}"
     
     ydl_opts = {
-        'format': 'bestaudio/best',
+        'format': 'bestaudio[ext=mp3]/bestaudio[ext=m4a]/bestaudio/bestvideo+bestaudio/best',  # Fallback to video if audio fails
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -83,20 +81,46 @@ def download_audio(url, output_path="downloads/audio"):
         'outtmpl': f"{output_path}.%(ext)s",
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'cookiefile': 'cookies.txt',
+        'http_headers': {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Referer': 'https://www.youtube.com/',
+        },
     }
     
+    download_attempted = True
     try:
+        if not os.path.exists('cookies.txt'):
+            logger.error("cookies.txt not found. Proceeding without cookies.")
+            st.warning("Cookies file not found. This may trigger YouTube bot detection.")
+        else:
+            logger.info("Using cookies.txt for YouTube authentication.")
+        
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             downloaded_file = f"{output_path}.mp3"
             if not os.path.exists(downloaded_file):
                 st.error("Audio download failed. File not found.")
                 return None
-            #st.write(f"Downloaded file: {downloaded_file}")
+            logger.info(f"Successfully downloaded audio for video {video_id}")
             return downloaded_file
     except Exception as e:
         st.error(f"Error downloading audio: {str(e)}")
+        logger.error(f"Error downloading audio for video {video_id}: {str(e)}")
+        # Log available formats for debugging
+        if "Requested format is not available" in str(e):
+            try:
+                with yt_dlp.YoutubeDL({'listformats': True}) as ydl:
+                    formats_info = ydl.extract_info(url, download=False)
+                    logger.info(f"Available formats for video {video_id}: {formats_info.get('formats', [])}")
+                    st.write("Available formats for this video:")
+                    st.write(formats_info.get('formats', []))
+            except Exception as format_error:
+                st.error(f"Could not retrieve formats: {str(format_error)}")
+                logger.error(f"Could not retrieve formats for video {video_id}: {str(format_error)}")
         return None
+    finally:
+        globals()['download_attempted'] = download_attempted
     
 # Function to extract subtitles if available
 def extract_subtitles(url):
@@ -295,35 +319,70 @@ def bart_summarize(_bart_tokenizer, text, _bart_model, num_sentences = 5):
 def generate_transcript(video_url, _model):
     try:
         video_id = video_url.split("v=")[-1].split("&")[0]
+        
+        # Try YouTube transcript first
+        try:
+            with st.spinner("Checking for YouTube transcript..."):
+                transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+                transcript = " ".join([segment['text'] for segment in transcript_data])
+                logger.info(f"Transcript fetched for video {video_id} using YouTubeTranscriptApi")
+                return transcript
+        except (TranscriptsDisabled, NoTranscriptFound):
+            logger.info(f"No transcript found for video {video_id}. Checking for subtitles...")
+        
+        # Try subtitles next
         subtitle_url = extract_subtitles(video_url)
         if subtitle_url:
             with st.spinner("Using subtitles for summarization..."):
                 transcript = clean_subtitles(subtitle_url)
                 if transcript:
+                    logger.info(f"Subtitles fetched for video {video_id}")
                     return transcript
-        try:
-            with st.spinner("Checking for YouTube transcript..."):
-                transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-                transcript = " ".join([segment['text'] for segment in transcript_data])
-                return transcript
-        except (TranscriptsDisabled, NoTranscriptFound):
-            pass
-        audio_path = download_audio(video_url)
-        if audio_path:
-            with st.spinner("Transcribing audio to text..."):
-                transcript = transcribe_audio(audio_path, _model=_model)
-                if os.path.exists(audio_path):
-                    os.remove(audio_path)
-                return transcript
-        st.error("Unable to generate transcript.")
-        return None
+                else:
+                    logger.info(f"No usable subtitles for video {video_id}")
+        
+        # Only attempt audio download if both transcript and subtitles fail
+        with st.spinner("No transcript or subtitles found. Downloading audio for transcription..."):
+            audio_path = download_audio(video_url)
+            if audio_path:
+                with st.spinner("Transcribing audio to text..."):
+                    transcript = transcribe_audio(audio_path, _model=_model)
+                    if os.path.exists(audio_path):
+                        os.remove(audio_path)
+                    logger.info(f"Audio transcribed for video {video_id}")
+                    return transcript
+            else:
+                st.error("Unable to download audio for transcription.")
+                logger.error(f"Failed to download audio for video {video_id}")
+                return None
     except Exception as e:
         st.error(f"Error during transcript generation: {str(e)}")
+        logger.error(f"Error generating transcript for video {video_id}: {str(e)}")
         return None
 
     
 # Function to display video details from the RSS feed
 def display_videos(feed, bart_model, bart_tokenizer, selected_channel, is_playlist=False, playlist_channel_title=None):
+    user_id = st.session_state.get("user_id", "default_user")
+    if "user_data" not in st.session_state:
+        st.session_state["user_data"] = {}
+    if user_id not in st.session_state["user_data"]:
+        st.session_state["user_data"][user_id] = {}
+
+    user_data = st.session_state["user_data"][user_id]
+
+    # Initialize rate-limiting counters
+    if "download_count" not in user_data:
+        user_data["download_count"] = 0
+    if "download_reset_time" not in user_data:
+        user_data["download_reset_time"] = time.time()
+
+    # Reset download count after 5 minutes
+    current_time = time.time()
+    if current_time - user_data["download_reset_time"] > 300:
+        user_data["download_count"] = 0
+        user_data["download_reset_time"] = current_time
+
     if is_playlist:
         videos = feed
         channel_title = playlist_channel_title if playlist_channel_title else "Unknown Channel"
@@ -344,67 +403,80 @@ def display_videos(feed, bart_model, bart_tokenizer, selected_channel, is_playli
             if is_playlist:
                 video_title = entry.get('title', "Untitled Video")
                 video_url = entry.get('url')
-                #thumbnail_url = entry.get('thumbnail')
                 if not video_url:
                     st.warning(f"Video URL is missing for: {video_title}")
                     continue
             else:
                 video_title = entry.find('./ns0:title', namespaces).text
                 video_url = entry.find('./ns0:link', namespaces).attrib['href']
-                #thumbnail_url = entry.find('.//ns2:thumbnail', namespaces).attrib['url']
                 
-            # Apply filtering condition only for certain channels (if needed)
             if selected_channel == "Philippine News Agency":
                 if "-1" not in video_title and "- 1" not in video_title:
-                    continue  # Skip this video if it doesn't match the title condition
-
+                    continue
             if selected_channel == "INQUIRER.NET":
                 if "INQToday" not in video_title:
                     continue
 
-            key = video_url  # Unique key for each video
-
-            # Initialize session state for retry tracking
-            if f"retry_{key}" not in st.session_state:
-                st.session_state[f"retry_{key}"] = False
+            key = video_url
+            if f"retry_{key}" not in user_data:
+                user_data[f"retry_{key}"] = False
 
             st.subheader(video_title)
             st.video(video_url)
             st.markdown(f"[Go to the Original Video]({video_url})")
 
-            # Add a button to generate a transcript
-            if st.button(f"Generate Summary for '{video_title}'", key=f"button_{key}") or st.session_state[f"retry_{key}"]:
+            if st.button(f"Generate Summary for '{video_title}'", key=f"button_{key}") or user_data[f"retry_{key}"]:
+                st.info("Processing your request. If multiple users are active, this may take a moment...")
+                if "last_download_time" not in user_data:
+                    user_data["last_download_time"] = 0
+                current_time = time.time()
+                if current_time - user_data["last_download_time"] < 20:  # 20-second delay between requests
+                    st.warning("Please wait a moment before requesting another summary to avoid YouTube restrictions.")
+                    continue
+
+                if user_data["download_count"] >= 2:
+                    st.error("Too many audio download requests. Please wait a few minutes and try again to avoid YouTube restrictions.")
+                    continue
+
                 try:
-                    st.session_state[f"retry_{key}"] = False
+                    user_data[f"retry_{key}"] = False
                     with st.spinner("Please wait, loading Whisper model and summarizing video..."):
-                        # Load Whisper model if not already loaded
-                        if st.session_state["whisper_model"] is None:
-                            st.session_state["whisper_model"] = load_whisper_model()
-                        transcript = generate_transcript(video_url, st.session_state["whisper_model"])
+                        if user_data.get("whisper_model") is None:
+                            user_data["whisper_model"] = load_whisper_model()
+                        transcript = generate_transcript(video_url, user_data["whisper_model"])
                         if transcript:
                             summary = bart_summarize(bart_tokenizer, transcript, bart_model)
-                            st.session_state[f"summary_{key}"] = summary
-                            if "video_history" not in st.session_state:
-                                st.session_state["video_history"] = []
-                            st.session_state["video_history"].insert(0, {"title": video_title, "summary": summary})
-                            st.session_state["video_history"] = st.session_state["video_history"][:20]
+                            user_data[f"summary_{key}"] = summary
+                            if "video_history" not in user_data:
+                                user_data["video_history"] = []
+                            user_data["video_history"].insert(0, {"title": video_title, "summary": summary})
+                            user_data["video_history"] = user_data["video_history"][:20]
                         else:
+                            if "download_attempted" in globals() and globals()['download_attempted']:
+                                user_data["download_count"] += 1
                             st.error("Could not transcribe the audio.")
-                            st.session_state[f"retry_{key}"] = True
+                            user_data[f"retry_{key}"] = True
                 except Exception as e:
+                    if "Requested format is not available" in str(e) or "Sign in to confirm you’re not a bot" in str(e):
+                        user_data["download_count"] += 1
+                        # Reset session to avoid persistent failures
+                        user_data["last_download_time"] = 0
+                        user_data["download_count"] = 0
+                        user_data["download_reset_time"] = current_time
                     st.error(f"Error generating transcript or summary: {str(e)}")
-                    st.session_state[f"retry_{key}"] = True
+                    user_data[f"retry_{key}"] = True
+                finally:
+                    user_data["last_download_time"] = current_time
+                    time.sleep(3)  # 3-second delay after each request
 
-            # Add retry button if the previous attempt failed
-            if st.session_state[f"retry_{key}"]:
+            if user_data[f"retry_{key}"]:
                 if st.button(f"Retry Generating Summary for '{video_title}'", key=f"retry_button_{key}"):
-                    st.session_state[f"retry_{key}"] = True  # Trigger retry
+                    user_data[f"retry_{key}"] = True
 
-            # Display summary if available
-            if f"summary_{key}" in st.session_state:
+            if f"summary_{key}" in user_data:
                 with st.expander(f"SUMMARY for '{video_title}'"):
                     st.write("NOTE: The summary may have misspelled some words due to transcript or audio quality.")
-                    st.write(st.session_state[f"summary_{key}"])
+                    st.write(user_data[f"summary_{key}"])
 
         except Exception as e:
             st.error(f"Error processing video: {str(e)}")
@@ -430,13 +502,14 @@ def display_video_history_in_sidebar():
 def run_youtube_summarizer():
     st.subheader("Video News!")
     st.write("Fetches The Latest English Philippine News Videos from Selected YouTube News Channels and Provides a Summary.")
-    # Initialize Whisper model as None
-    if "whisper_model" not in st.session_state:
-        st.session_state["whisper_model"] = None
-
-    # Call to display the video history in the sidebar
-    #display_video_history_in_sidebar()
     
+    # Initialize user-specific state
+    user_id = st.session_state.get("user_id", "default_user")
+    if "user_data" not in st.session_state:
+        st.session_state["user_data"] = {}
+    if user_id not in st.session_state["user_data"]:
+        st.session_state["user_data"][user_id] = {"whisper_model": None}
+
     # Define the list of YouTube channel RSS feeds
     channel_options = {
         "Philippine News Agency": "https://www.youtube.com/feeds/videos.xml?channel_id=UC_PzHuZxnyVh4jRQjpfbXUg",  
@@ -447,35 +520,27 @@ def run_youtube_summarizer():
         "Al Jazeera English": "https://www.youtube.com/playlist?list=PLzGHKb8i9vTwxHRKLZ9LMCBoSLtna7vCk"
     }
 
-    # Add a placeholder as the first option
     placeholder = "--Please Select a YouTube News Channel!--"
     all_options = [placeholder] + list(channel_options.keys())
 
-    # Dropdown menu for selecting a news channel
     selected_channel = st.selectbox("Select A Youtube News Channel!", options=all_options)
     with st.expander("INSTRUCTIONS: How to Use Video News!"):
         st.write("""
-                 
             1. Select a YouTube news channel from the dropdown list.
-                
             2. Each of the YouTube news channel will have videos and has a Generate Summary button.
-                 
             3. Press the button in order to generate the summary. (NOTE: Please wait as it may take some time especially if the video's audio is used for summarization!)
-                 
             4. Read the summaries to get an overview of the news.
         """)
 
-    # Initialize feed to None
     feed = None
-    
     if selected_channel != placeholder:
-            feed_url = channel_options[selected_channel]
-            if "playlist?list=" in feed_url:  # Detect if the URL is a playlist
-                feed = fetch_videos_from_playlist(feed_url, limit=10)
-                display_videos(feed, bart_model, bart_tokenizer, selected_channel, is_playlist=True, playlist_channel_title=selected_channel)
-            else:
-                feed = fetch_youtube_feed(feed_url)
-                display_videos(feed, bart_model, bart_tokenizer, selected_channel)
+        feed_url = channel_options[selected_channel]
+        if "playlist?list=" in feed_url:
+            feed = fetch_videos_from_playlist(feed_url, limit=10)
+            display_videos(feed, bart_model, bart_tokenizer, selected_channel, is_playlist=True, playlist_channel_title=selected_channel)
+        else:
+            feed = fetch_youtube_feed(feed_url)
+            display_videos(feed, bart_model, bart_tokenizer, selected_channel)
                                
 if __name__ == "__main__":
     run_youtube_summarizer()
