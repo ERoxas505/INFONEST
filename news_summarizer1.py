@@ -219,7 +219,7 @@ def bart_summarize(_bart_tokenizer, text, _bart_model, num_sentences=5):
         
         # Define max_length and min_length based on the user-specified number of sentences
         max_length = 30 * num_sentences  # Estimate 50 tokens per sentence
-        min_length = 10 * num_sentences  # Estimate 20 tokens per sentence
+        min_length = 20 * num_sentences  # Estimate 20 tokens per sentence
         
         with torch.no_grad():
             summary_ids = _bart_model.generate(
