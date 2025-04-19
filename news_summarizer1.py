@@ -157,7 +157,7 @@ def fetch_news_poster(poster_link):
         image = Image.open(io.BytesIO(raw_data))
     except:
         image = Image.open('./Meta/no_image.jpg')
-    st.image(image, use_container_width=True) #st.image(image, use_column_width=True)
+    st.image(image, use_column_width=True) #st.image(image, use_column_width=True)
 
 @st.cache_data(ttl=None, max_entries=80)
 def extract_entities(text):
