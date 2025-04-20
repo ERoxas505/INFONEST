@@ -30,8 +30,8 @@ nlp.add_pipe("textrank", last=True)
 st.set_page_config(page_title='INFONest🇵🇭: Get the News!📰', page_icon='./Meta/newspaper1.ico')
 
 #Import the Youtube summarizer
-from video_summarizer1 import run_youtube_summarizer 
-from video_summarizer1 import display_video_history_in_sidebar
+#from video_summarizer1 import run_youtube_summarizer 
+#from video_summarizer1 import display_video_history_in_sidebar
 
 @st.cache_resource
 def get_actual_article_link(google_news_url):
@@ -469,8 +469,8 @@ def run():
         else:
             st.warning("Please enter a topic to search.")
 
-    elif cat_op == category[4]:  # video_summarizer
-        run_youtube_summarizer()  # Call the function from youtube_summarizer.py
+    #elif cat_op == category[4]:  # video_summarizer
+        #run_youtube_summarizer()  # Call the function from youtube_summarizer.py
 
 
     # Inject custom CSS to change the font size of the sidebar header
@@ -506,7 +506,7 @@ def run():
             else:
                 st.write("No history available yet.")
 
-    display_video_history_in_sidebar()
+    #display_video_history_in_sidebar()
 
 
 run()
