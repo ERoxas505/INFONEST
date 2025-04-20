@@ -1,5 +1,6 @@
 import streamlit as st
 from transformers.models.bart import BartForConditionalGeneration, BartTokenizer
+from transformers import GenerationConfig 
 import os
 
 @st.cache_resource
@@ -11,10 +12,11 @@ def load_bart_model():
         #use_safetensors=False,
         use_auth_token=token
     ).to("cpu")
-    return model
-    # Explicitly set the GenerationConfig with a valid early_stopping value
     model.generation_config = GenerationConfig.from_model_config(model.config)
     model.generation_config.early_stopping = False  # Set to False to avoid the validation error
+    return model
+    # Explicitly set the GenerationConfig with a valid early_stopping value
+    
 
 @st.cache_resource
 def load_bart_tokenizer():
