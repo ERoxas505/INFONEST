@@ -12,6 +12,9 @@ def load_bart_model():
         use_auth_token=token
     ).to("cpu")
     return model
+    # Explicitly set the GenerationConfig with a valid early_stopping value
+    model.generation_config = GenerationConfig.from_model_config(model.config)
+    model.generation_config.early_stopping = False  # Set to False to avoid the validation error
 
 @st.cache_resource
 def load_bart_tokenizer():
