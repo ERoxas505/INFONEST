@@ -299,10 +299,6 @@ def display_news(list_of_news, news_quantity, stop_words, bart_tokenizer, bart_m
     st.session_state["history"][category] = history[-10:]  # Keep only the last 10 items
 
 
-
-
-
-
 # Function to convert image to base64 format to use in the HTML img tag
 def image_to_base64(image):
     import base64
@@ -335,30 +331,28 @@ def run():
         unsafe_allow_html=True,
     )
 
-   
     # Track category selection in session state
     if "selected_category" not in st.session_state:
         st.session_state["selected_category"] = None
 
 
-
     # Reset session state if category changes
-    category = ['--Select--', 'Top News', 'Hot Topics', 'Search', 'Video News']
+    category = ['--Select--', 'Top News', 'Hot Topics', 'Search']
     cat_op = st.selectbox('Please Select:', category)
 
     if st.session_state["selected_category"] != cat_op:
         st.session_state["selected_category"] = cat_op
 
 
-    if cat_op in category[0:4]:  # Show for 'Top News', 'Hot Topics', and 'Search'
+    if cat_op in category[0:3]:  # Show for 'Top News', 'Hot Topics', and 'Search'
         with st.expander("INSTRUCTIONS: How to use INFONest!"):
             st.write("""
                 NOTE: Some articles may not be loaded at all as not all websites allow for the scraping of data.
             
-                1. Select a category of your choice! (i.e. Top News!, Hot Topics, Search, and Video News)
+                1. Select a category of your choice! (i.e. Top News!, Hot Topics, and Search)
                 
                 2. If you pick Top News, Hot Topics, or Search, the application will load 5 of the recent and newest articles 
-                based on the category chosen. (NOTE: Please check out the Video News Category to know more about it)
+                based on the category chosen. 
                 
                 3. The articles loaded will have their own summaries. (NOTE: Please wait as it may take time to load the articles and 
                 summaries!)  
