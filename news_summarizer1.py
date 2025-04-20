@@ -358,7 +358,7 @@ def run():
                 summaries!)  
 
                 4. Use the summaries as overview for what each of the news is about!            
-            """)
+            """) #removed Video News for now
     
 
     # If category is not selected yet, show a warning
@@ -485,7 +485,7 @@ def run():
     spacer.text("\n")  # Add line breaks to push content down
 
 
-    categories = ["Top News", "Hot Topics", "Search"]
+    categories = ["Top News", "Hot Topics", "Search"] #removed Video News for now...
 
     # Create separate expanders for each category
     for cat in categories:
