@@ -1,67 +1,70 @@
 import streamlit as st
-from transformers.models.bart import BartForConditionalGeneration, BartTokenizer, BartConfig
+from transformers.models.bart import BartForConditionalGeneration, BartTokenizer
+from transformers import GenerationConfig 
 import os
 
 @st.cache_resource
 def load_bart_model():
     token = os.getenv("HF_TOKEN")
-    
-    # Load the model configuration
-    config = BartConfig.from_pretrained(
-        "Angel0J/distilbart-multi_news-12-6_2",
-        use_auth_token=token
-    )
-    
-    # Set early_stopping in the config to a valid value
-    config.early_stopping = False  # Set to False to avoid the validation error
-    
-    # Initialize the model with the modified config
     model = BartForConditionalGeneration.from_pretrained(
-        "Angel0J/distilbart-multi_news-12-6_2",
-        config=config,  # Pass the modified config
+        "sshleifer/distilbart-cnn-12-6",
+        #"Angel0J/distilbart-multi_news-12-6_2",
+        use_safetensors=False,
         use_auth_token=token
     ).to("cpu")
-    
+    #model.generation_config = GenerationConfig.from_model_config(model.config)
+    #model.generation_config.early_stopping = False  # Set to False to avoid the validation error
     return model
+    # Explicitly set the GenerationConfig with a valid early_stopping value
+    
 
 @st.cache_resource
 def load_bart_tokenizer():
     token = os.getenv("HF_TOKEN")
     tokenizer = BartTokenizer.from_pretrained(
-        "Angel0J/distilbart-multi_news-12-6_2",
+        "sshleifer/distilbart-cnn-12-6",
+        #"Angel0J/distilbart-multi_news-12-6_2",
         use_auth_token=token
     )
     return tokenizer
 
+
 #import streamlit as st
-#from transformers.models.bart import BartForConditionalGeneration, BartTokenizer
-#from transformers import GenerationConfig 
+#from transformers.models.bart import BartForConditionalGeneration, BartTokenizer, BartConfig
 #import os
 
 #@st.cache_resource
 #def load_bart_model():
     #token = os.getenv("HF_TOKEN")
-    #model = BartForConditionalGeneration.from_pretrained(
-        #"sshleifer/distilbart-cnn-12-6",
+    
+    # Load the model configuration
+    #config = BartConfig.from_pretrained(
         #"Angel0J/distilbart-multi_news-12-6_2",
-        #use_safetensors=False,
+        #use_auth_token=token
+    #)
+    
+    # Set early_stopping in the config to a valid value
+    #config.early_stopping = False  # Set to False to avoid the validation error
+    
+    # Initialize the model with the modified config
+    #model = BartForConditionalGeneration.from_pretrained(
+        #"Angel0J/distilbart-multi_news-12-6_2",
+        #config=config,  # Pass the modified config
         #use_auth_token=token
     #).to("cpu")
-    #model.generation_config = GenerationConfig.from_model_config(model.config)
-    #model.generation_config.early_stopping = False  # Set to False to avoid the validation error
-    #return model
-    # Explicitly set the GenerationConfig with a valid early_stopping value
     
+    #return model
 
 #@st.cache_resource
 #def load_bart_tokenizer():
     #token = os.getenv("HF_TOKEN")
     #tokenizer = BartTokenizer.from_pretrained(
-        #"sshleifer/distilbart-cnn-12-6",
         #"Angel0J/distilbart-multi_news-12-6_2",
         #use_auth_token=token
-   # )
+    #)
     #return tokenizer
+
+
 
 #ORIGINAL CODE:
 
