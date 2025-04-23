@@ -5,16 +5,20 @@ import os
 
 @st.cache_resource
 def load_bart_model():
+    token = os.getenv("HF_TOKEN")
     model = BartForConditionalGeneration.from_pretrained(
         "sshleifer/distilbart-cnn-12-6",
-        use_safetensors=False
+        use_safetensors=False,
+        use_auth_token=token
     ).to("cpu")
     return model
 
 @st.cache_resource
 def load_bart_tokenizer():
+    token = os.getenv("HF_TOKEN")
     tokenizer = BartTokenizer.from_pretrained(
-        "sshleifer/distilbart-cnn-12-6"
+        "sshleifer/distilbart-cnn-12-6",
+        use_auth_token=token
     )
     return tokenizer
 
