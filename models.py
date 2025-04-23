@@ -1,55 +1,37 @@
-#ORIGINAL CODE:
-
 import streamlit as st
-from transformers import BartForConditionalGeneration, BartTokenizer
-from transformers.models.bart import BartForConditionalGeneration, BartTokenizer
+from transformers.models.bart import BartForConditionalGeneration, BartTokenizer, BartConfig
+import os
 
 @st.cache_resource
 def load_bart_model():
-    model = BartForConditionalGeneration.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors=False).to("cpu")
-    return model
-@st.cache_resource
-def load_bart_tokenizer():
-    tokenizer = BartTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
-    return tokenizer
-
-
-
-
-#import streamlit as st
-#from transformers.models.bart import BartForConditionalGeneration, BartTokenizer, BartConfig
-#import os
-
-#@st.cache_resource
-#def load_bart_model():
-    #token = os.getenv("HF_TOKEN")
+    token = os.getenv("HF_TOKEN")
     
     # Load the model configuration
-    #config = BartConfig.from_pretrained(
-        #"Angel0J/distilbart-multi_news-12-6_2",
-        #use_auth_token=token
-    #)
+    config = BartConfig.from_pretrained(
+        "Angel0J/distilbart-multi_news-12-6_2",
+        use_auth_token=token
+    )
     
     # Set early_stopping in the config to a valid value
-    #config.early_stopping = False  # Set to False to avoid the validation error
+    config.early_stopping = False  # Set to False to avoid the validation error
     
     # Initialize the model with the modified config
-    #model = BartForConditionalGeneration.from_pretrained(
-        #"Angel0J/distilbart-multi_news-12-6_2",
-        #config=config,  # Pass the modified config
-        #use_auth_token=token
-    #).to("cpu")
+    model = BartForConditionalGeneration.from_pretrained(
+        "Angel0J/distilbart-multi_news-12-6_2",
+        config=config,  # Pass the modified config
+        use_auth_token=token
+    ).to("cpu")
     
-    #return model
+    return model
 
-#@st.cache_resource
-#def load_bart_tokenizer():
-    #token = os.getenv("HF_TOKEN")
-    #tokenizer = BartTokenizer.from_pretrained(
-        #"Angel0J/distilbart-multi_news-12-6_2",
-        #use_auth_token=token
-    #)
-    #return tokenizer
+@st.cache_resource
+def load_bart_tokenizer():
+    token = os.getenv("HF_TOKEN")
+    tokenizer = BartTokenizer.from_pretrained(
+        "Angel0J/distilbart-multi_news-12-6_2",
+        use_auth_token=token
+    )
+    return tokenizer
 
 #import streamlit as st
 #from transformers.models.bart import BartForConditionalGeneration, BartTokenizer
@@ -81,3 +63,17 @@ def load_bart_tokenizer():
    # )
     #return tokenizer
 
+#ORIGINAL CODE:
+
+#import streamlit as st
+#from transformers import BartForConditionalGeneration, BartTokenizer
+#from transformers.models.bart import BartForConditionalGeneration, BartTokenizer
+
+#@st.cache_resource
+#def load_bart_model():
+    #model = BartForConditionalGeneration.from_pretrained("sshleifer/distilbart-cnn-12-6", use_safetensors=False).to("cpu")
+    #return model
+#@st.cache_resource
+#def load_bart_tokenizer():
+    #tokenizer = BartTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
+    #return tokenizer
